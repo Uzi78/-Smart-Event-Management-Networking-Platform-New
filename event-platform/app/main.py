@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import close_mongo_connection, connect_to_mongo
-from app.routers import ai, events, organizations, payment, registration, tickets, waitlist
+from app.routers import ai, auth_router, events, organizations, payment, registration, tickets, waitlist
 
 app = FastAPI(
     title="Event Platform API",
@@ -30,6 +30,7 @@ async def shutdown_db_client():
     await close_mongo_connection()
 
 
+app.include_router(auth_router.router)
 app.include_router(events.router)
 app.include_router(organizations.router)
 app.include_router(ai.router)

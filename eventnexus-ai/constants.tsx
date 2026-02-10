@@ -21,6 +21,7 @@ export const NAV_ITEMS = [
   { id: 'attendees', label: 'Attendees', icon: <Users size={20} />, roles: [UserRole.ORGANIZER, UserRole.STAFF] },
   { id: 'badges', label: 'Badges', icon: <IdCard size={20} />, roles: [UserRole.ORGANIZER] },
   { id: 'assistant', label: 'AI Assistant', icon: <MessageSquare size={20} />, roles: [UserRole.ATTENDEE, UserRole.ORGANIZER] },
+  { id: 'profile', label: 'My Profile', icon: <Users size={20} />, roles: [UserRole.ATTENDEE, UserRole.ORGANIZER] },
   { id: 'settings', label: 'Settings', icon: <Settings size={20} />, roles: [UserRole.ATTENDEE, UserRole.ORGANIZER] },
 ];
 

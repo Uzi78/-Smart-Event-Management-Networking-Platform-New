@@ -430,7 +430,8 @@ curl -X POST "http://localhost:8000/api/organizations/" \
 
 ---
 
-## Contributing
+## Contributing to 
+ 
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)

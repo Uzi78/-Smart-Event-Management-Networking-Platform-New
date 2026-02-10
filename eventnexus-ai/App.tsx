@@ -8,7 +8,10 @@ import Badges from './components/Badges';
 import EventEngagement from './components/EventEngagement';
 import Settings from './components/Settings';
 import AIAssistant from './components/AIAssistant';
+import AuthScreen from './components/AuthScreen';
+import AttendeeProfile from './components/AttendeeProfile';
 import { UserRole } from './types';
+import { authStore } from './services/api';
 import { 
   Search, 
   ChevronDown, 
@@ -18,19 +21,41 @@ import {
   Zap,
   User,
   ShieldCheck,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [role, setRole] = useState<UserRole>(UserRole.ORGANIZER);
+  const [role, setRole] = useState<UserRole>(UserRole.ATTENDEE);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGestureMode, setIsGestureMode] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(authStore.isLoggedIn());
+  const [currentUser, setCurrentUser] = useState<any>(authStore.getUser());
   
   const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Listen for forced logout (401 from API)
+  useEffect(() => {
+    const handleLogout = () => {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+    };
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, []);
+
+  // Sync role from user profile
+  useEffect(() => {
+    if (currentUser?.role) {
+      setRole(currentUser.role === 'ORGANIZER' ? UserRole.ORGANIZER : UserRole.ATTENDEE);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (theme === 'light') {
@@ -40,7 +65,6 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Handle click outside for role dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
@@ -51,9 +75,27 @@ const App: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleAuth = (user: any) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setRole(user.role === 'ORGANIZER' ? UserRole.ORGANIZER : UserRole.ATTENDEE);
+  };
+
+  const handleLogout = () => {
+    authStore.clear();
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setCurrentTab('dashboard');
+  };
+
   const handleVoiceCommand = () => {
     alert("Voice command system initialized. Listening...");
   };
+
+  // ── Auth Gate ──────────────────────────────────────────────────────────
+  if (!isAuthenticated) {
+    return <AuthScreen onAuth={handleAuth} />;
+  }
 
   const renderContent = () => {
     switch (currentTab) {
@@ -65,11 +107,21 @@ const App: React.FC = () => {
       case 'venue':
         return <VenueEditor />;
       case 'networking':
-        return <AINetworking />;
+        return <AINetworking currentUser={currentUser} />;
       case 'badges':
         return <Badges />;
       case 'assistant':
         return <AIAssistant />;
+      case 'profile':
+        return (
+          <AttendeeProfile
+            currentUser={currentUser}
+            onProfileUpdate={(u) => {
+              setCurrentUser(u);
+              authStore.setAuth(authStore.getToken()!, u);
+            }}
+          />
+        );
       case 'settings':
         return <Settings theme={theme} onThemeChange={setTheme} />;
       default:
@@ -159,6 +211,27 @@ const App: React.FC = () => {
              </div>
 
             <div className="h-8 w-[1px] bg-theme-border mx-2"></div>
+
+            {/* User Info + Profile Link */}
+            <button
+              onClick={() => setCurrentTab('profile')}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-theme-border transition-all"
+              title="My Profile"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
+                {(currentUser?.name || 'U')[0].toUpperCase()}
+              </div>
+              <span className="text-xs font-bold text-theme-text max-w-[100px] truncate">{currentUser?.name || 'User'}</span>
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="p-2.5 text-theme-sub hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
 
             {/* Custom Role Dropdown */}
             <div className="relative" ref={roleDropdownRef}>

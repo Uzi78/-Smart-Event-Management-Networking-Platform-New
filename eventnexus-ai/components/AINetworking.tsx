@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Network, Sparkles, MessageSquare, UserPlus, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
-import { MOCK_USER } from '../constants';
 
 const MOCK_ATTENDEES = [
   { name: 'Sarah Chen', company: 'AI Solutions', industry: 'Data Science', interests: ['Machine Learning', 'AI Ethics'] },
@@ -12,14 +11,26 @@ const MOCK_ATTENDEES = [
   { name: 'Lisa Ray', company: 'GreenEnergy', industry: 'Sustainability', interests: ['IoT', 'Renewable Energy'] },
 ];
 
-const AINetworking: React.FC = () => {
+interface AINetworkingProps {
+  currentUser?: any;
+}
+
+const AINetworking: React.FC<AINetworkingProps> = ({ currentUser }) => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
-      const results = await api.getNetworkingRecommendations(MOCK_USER, MOCK_ATTENDEES, 3);
+      // Fetch real attendees from MongoDB, fallback to mocks
+      let attendees = MOCK_ATTENDEES;
+      try {
+        const dbAttendees = await api.getAttendees();
+        if (dbAttendees.length > 0) attendees = dbAttendees;
+      } catch {}
+
+      const user = currentUser || { name: 'User', interests: [] };
+      const results = await api.getNetworkingRecommendations(user, attendees, 3);
       setRecommendations(results);
     } catch (error) {
       console.warn('AI backend unreachable; falling back to empty recommendations.', error);
@@ -126,16 +137,16 @@ const AINetworking: React.FC = () => {
             <p className="text-indigo-100 text-xs mb-6 relative z-10 opacity-70 uppercase tracking-widest font-bold">Interests Matching Active</p>
             <div className="space-y-4 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-xl border border-white/20 flex items-center justify-center font-black">AR</div>
+                <div className="w-12 h-12 bg-white/10 rounded-xl border border-white/20 flex items-center justify-center font-black">{(currentUser?.name || 'U')[0].toUpperCase()}{(currentUser?.name || 'User').split(' ')[1]?.[0]?.toUpperCase() || ''}</div>
                 <div>
-                  <p className="font-bold">{MOCK_USER.name}</p>
-                  <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest opacity-80">{MOCK_USER.company}</p>
+                  <p className="font-bold">{currentUser?.name || 'User'}</p>
+                  <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest opacity-80">{currentUser?.company || 'My Company'}</p>
                 </div>
               </div>
               <div className="pt-4 border-t border-white/10">
                 <p className="text-[9px] font-bold text-indigo-100 uppercase tracking-[0.2em] mb-3">Professional Focus</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {MOCK_USER.interests?.map(interest => (
+                  {(currentUser?.interests || []).map((interest: string) => (
                     <span key={interest} className="text-[9px] font-bold bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg">{interest}</span>
                   ))}
                 </div>
