@@ -1,0 +1,8 @@
+{
+  "name": "EventNexus AI",
+  "description": "A comprehensive smart event management and networking platform featuring AI-powered matchmaking, interactive floor plans, gesture control, and speech navigation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
